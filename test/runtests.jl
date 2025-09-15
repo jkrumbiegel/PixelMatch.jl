@@ -1,0 +1,123 @@
+using Test
+using PixelMatch
+using ColorTypes
+using FileIO
+using PNGFiles
+
+# Helper function to read PNG images
+function read_image(name::String)
+    filepath = joinpath(@__DIR__, "..", "pixelmatch", "test", "fixtures", "$name.png")
+    return load(filepath)
+end
+
+# Helper function to write PNG images (for debugging)
+function write_image(name::String, image)
+    filepath = joinpath(@__DIR__, "..", "pixelmatch", "test", "fixtures", "$name.png")
+    save(filepath, image)
+end
+
+# Main test function that mirrors the JavaScript diffTest
+function diff_test(img_path1::String, img_path2::String, diff_path::String, options::Dict, expected_mismatch::Int)    
+    img1 = read_image(img_path1)
+    img2 = read_image(img_path2)
+    
+    # Don't convert to Float64 - work with the native PNG format
+    img1_processed = img1
+    img2_processed = img2
+    
+    height, width = size(img1_processed)
+    
+    # Convert JavaScript options to Julia keyword arguments
+    kwargs = Dict{Symbol, Any}()
+    
+    if haskey(options, "threshold")
+        if options["threshold"] !== nothing
+            kwargs[:threshold] = options["threshold"]
+        end
+    end
+    
+    if haskey(options, "alpha")
+        kwargs[:alpha] = options["alpha"]
+    end
+    
+    if haskey(options, "includeAA")
+        kwargs[:include_aa] = options["includeAA"]
+    end
+    
+    if haskey(options, "diffMask")
+        kwargs[:diff_mask] = options["diffMask"]
+    end
+    
+    if haskey(options, "aaColor")
+        aa_color = options["aaColor"]
+        kwargs[:aa_color] = RGBA(aa_color[1]/255, aa_color[2]/255, aa_color[3]/255, 1.0)
+    end
+    
+    if haskey(options, "diffColor")
+        diff_color = options["diffColor"]
+        kwargs[:diff_color] = RGBA(diff_color[1]/255, diff_color[2]/255, diff_color[3]/255, 1.0)
+    end
+    
+    if haskey(options, "diffColorAlt")
+        diff_color_alt = options["diffColorAlt"]
+        kwargs[:diff_color_alt] = RGBA(diff_color_alt[1]/255, diff_color_alt[2]/255, diff_color_alt[3]/255, 1.0)
+    end
+    
+    # Test with output
+    mismatch, output = pixelmatch(img1_processed, img2_processed; kwargs...)
+    
+    # Check results
+    @test mismatch == expected_mismatch
+    
+    # Compare diff with expected diff
+    expected_diff = read_image(diff_path)
+    
+    # Convert both to RGBA format to handle RGB vs RGBA mismatches
+    output_rgba = RGBA.(output)
+    expected_rgba = RGBA.(expected_diff)
+    
+    # Debug: save the generated diff for inspection
+    if output_rgba != expected_rgba
+        debug_path = diff_path * "_debug"
+        write_image(debug_path, output_rgba)
+        println("Mismatch in $diff_path - saved debug image as $debug_path.png")
+    end
+    
+    @test output_rgba == expected_rgba
+end
+
+@testset "PixelMatch.jl Tests" begin
+    
+    # Test all the exact same cases as in the JavaScript tests
+    options = Dict("threshold" => 0.05)
+    
+    @testset "Image comparison tests" begin
+        diff_test("1a", "1b", "1diff", options, 143)
+        diff_test("1a", "1b", "1diffdefaultthreshold", Dict("threshold" => nothing), 106)
+        diff_test("1a", "1b", "1diffmask", Dict("threshold" => 0.05, "includeAA" => false, "diffMask" => true), 143)
+        diff_test("1a", "1a", "1emptydiffmask", Dict("threshold" => 0, "diffMask" => true), 0)
+        
+        diff_test("2a", "2b", "2diff", Dict(
+            "threshold" => 0.05,
+            "alpha" => 0.5,
+            "aaColor" => [0, 192, 0],
+            "diffColor" => [255, 0, 255]
+        ), 12437)
+        
+        diff_test("3a", "3b", "3diff", options, 212)
+        diff_test("4a", "4b", "4diff", options, 36049)
+        diff_test("5a", "5b", "5diff", options, 6) # TODO: Fix anti-aliasing - currently gets 0
+        diff_test("6a", "6b", "6diff", options, 51)
+        diff_test("6a", "6a", "6empty", Dict("threshold" => 0), 0)
+        diff_test("7a", "7b", "7diff", Dict("diffColorAlt" => [0, 255, 0]), 2448)
+        diff_test("8a", "5b", "8diff", options, 32896)
+    end
+    
+    @testset "Error handling tests" begin
+        # Test size mismatch
+        img1 = fill(RGBA(0.5, 0.5, 0.5, 1.0), 10, 10)
+        img2 = fill(RGBA(0.5, 0.5, 0.5, 1.0), 5, 5)
+        
+        @test_throws ArgumentError pixelmatch(img1, img2)
+    end
+end
