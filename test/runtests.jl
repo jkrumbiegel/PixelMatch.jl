@@ -6,13 +6,13 @@ using PNGFiles
 
 # Helper function to read PNG images
 function read_image(name::String)
-    filepath = joinpath(@__DIR__, "..", "pixelmatch", "test", "fixtures", "$name.png")
+    filepath = joinpath(@__DIR__, "fixtures", "$name.png")
     return load(filepath)
 end
 
 # Helper function to write PNG images (for debugging)
 function write_image(name::String, image)
-    filepath = joinpath(@__DIR__, "..", "pixelmatch", "test", "fixtures", "$name.png")
+    filepath = joinpath(@__DIR__, "fixtures", "$name.png")
     save(filepath, image)
 end
 
