@@ -35,7 +35,7 @@ macro test_pixelmatch_fails(name, expr, numpixels, kwargs...)
     end
 end
 
-function _test_pixelmatch(path_stem::String, recorded::AbstractMatrix{<:ColorTypes.Colorant}; test_pixel_mismatch::Union{Integer,Nothing} = nothing, kwargs...)
+function _test_pixelmatch(path_stem::String, obj_to_record; test_pixel_mismatch::Union{Integer,Nothing} = nothing, kwargs...)
     update = tryparse(Bool, get(ENV, "JULIA_REFERENCETESTS_UPDATE", "false")) === true
     
     ref_path = path_stem * "_ref.png"
@@ -45,8 +45,15 @@ function _test_pixelmatch(path_stem::String, recorded::AbstractMatrix{<:ColorTyp
     name = basename(path_stem)
     mkpath(dirname(path_stem))
 
-    # Save recorded image
-    PNGFiles.save(rec_path, recorded)
+    if obj_to_record isa AbstractMatrix{<:Colorant}
+        PNGFiles.save(rec_path, obj_to_record)
+    else
+        open(rec_path, "w") do io
+            show(io, MIME"image/png"(), obj_to_record)
+        end
+    end
+    recorded = PNGFiles.load(rec_path)
+
 
     # for running the tests locally where isinteractive() returns true
     interactive = INTERACTIVE_MODE[] && isinteractive()
