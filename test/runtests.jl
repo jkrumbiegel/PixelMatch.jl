@@ -1,8 +1,11 @@
 using Test
 using PixelMatch
+using PixelMatch: @test_pixelmatch_fails
 using ColorTypes
 using FileIO
 using PNGFiles
+
+PixelMatch.INTERACTIVE_MODE[] = false
 
 # Helper function to read PNG images
 function read_image(name::String)
@@ -119,5 +122,42 @@ end
         img2 = fill(RGBA(0.5, 0.5, 0.5, 1.0), 5, 5)
         
         @test_throws ArgumentError pixelmatch(img1, img2)
+    end
+
+    @testset "@test_pixelmatch macro" begin
+        foldername = "macro_test_temp"
+        test_dir = joinpath(@__DIR__, foldername)
+        mkpath(test_dir)
+        
+        try
+            test_image = read_image("1a")
+            different_image = read_image("1b")
+            diff_between_both = read_image("1diff")
+
+            ref_path = joinpath(test_dir, "matching_ref.png")
+            cp(joinpath(@__DIR__, "fixtures", "1a.png"), ref_path)
+            
+            @test_pixelmatch joinpath(foldername, "matching") test_image
+            rec_path = joinpath(test_dir, "matching_rec.png")
+            @test isfile(rec_path)
+            diff_path = joinpath(test_dir, "matching_diff.png")
+            @test !isfile(diff_path)
+
+            # copy same image as before to a different name to get different rec/diff images
+            ref_path2 = joinpath(test_dir, "different_ref.png")
+            cp(joinpath(@__DIR__, "fixtures", "1a.png"), ref_path2)
+            
+            rec_path2 = joinpath(test_dir, "different_rec.png")
+            diff_path2 = joinpath(test_dir, "different_diff.png")
+            @test_pixelmatch_fails joinpath(foldername, "different") different_image 143 threshold=0.05
+            
+            @test isfile(rec_path2)
+            @test isfile(diff_path2)
+            
+            cp(diff_path2, joinpath(test_dir, "diff_ref.png"))
+            @test_pixelmatch joinpath(foldername, "diff") diff_between_both
+        finally
+            rm(test_dir; recursive=true, force=true)
+        end
     end
 end

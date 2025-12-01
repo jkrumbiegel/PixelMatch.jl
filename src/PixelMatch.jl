@@ -1,6 +1,13 @@
 module PixelMatch
 
 using ColorTypes
+import PNGFiles
+import Base64
+import Test
+
+INTERACTIVE_MODE = Ref(true)
+
+export @test_pixelmatch
 
 export pixelmatch
 
@@ -14,7 +21,7 @@ Compare two equally sized images, pixel by pixel.
 # Arguments
 - `img1`: First image as a matrix of color values
 - `img2`: Second image as a matrix of color values
-- `threshold`: Matching threshold (0 to 1); smaller is more sensitive. `nothing` defaults to 0.1
+- `threshold`: Matching threshold (0 to 1); smaller is more sensitive, defaults to 0.1
 - `include_aa`: Whether to include anti-aliasing detection
 - `alpha`: Opacity of original image in diff output
 - `aa_color`: Color of anti-aliased pixels in diff output
@@ -26,7 +33,7 @@ Compare two equally sized images, pixel by pixel.
 A tuple of (number of mismatched pixels, diff image).
 """
 function pixelmatch(img1::AbstractMatrix{<:Colorant}, img2::AbstractMatrix{<:Colorant}; 
-                   threshold::Union{Real, Nothing}=0.1,
+                   threshold=0.1,
                    include_aa::Bool=false,
                    alpha::Real=0.1,
                    aa_color::Colorant=RGB(1.0, 1.0, 0.0),
@@ -35,7 +42,7 @@ function pixelmatch(img1::AbstractMatrix{<:Colorant}, img2::AbstractMatrix{<:Col
                    diff_mask::Bool=false)
     
     # Handle default threshold
-    actual_threshold = threshold === nothing ? 0.1 : threshold
+    actual_threshold::Float64 = threshold
     
     height, width = size(img1)
     
@@ -265,5 +272,7 @@ function draw_gray_pixel(pixel::RGBA{Float64}, alpha_blend::Real)
     
     return RGBA(val, val, val, 1.0)
 end
+
+include("test_macro.jl")
 
 end # module PixelMatch
