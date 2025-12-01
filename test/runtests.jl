@@ -1,8 +1,12 @@
 using Test
 using PixelMatch
+using PixelMatch: @test_pixelmatch_fails
 using ColorTypes
 using FileIO
 using PNGFiles
+using ReferenceTests
+
+PixelMatch.INTERACTIVE_MODE[] = false
 
 # Helper function to read PNG images
 function read_image(name::String)
@@ -86,6 +90,12 @@ function diff_test(img_path1::String, img_path2::String, diff_path::String, opti
     @test output_rgba == expected_rgba
 end
 
+struct PNG
+    path::String
+end
+
+Base.show(io::IO, ::MIME"image/png", p::PNG) = write(io, read(p.path))
+
 @testset "PixelMatch.jl Tests" begin
     
     # Test all the exact same cases as in the JavaScript tests
@@ -119,5 +129,55 @@ end
         img2 = fill(RGBA(0.5, 0.5, 0.5, 1.0), 5, 5)
         
         @test_throws ArgumentError pixelmatch(img1, img2)
+    end
+
+    @testset "@test_pixelmatch macro" begin
+        foldername = "macro_test_temp"
+        test_dir = joinpath(@__DIR__, foldername)
+        mkpath(test_dir)
+        
+        # change out of the test folder just to see that the relative paths in @test_pixelmatch
+        # are actually resolved relative to the macro placement and not pwd
+        cd("..") do
+            try
+                test_image = read_image("1a")
+                different_image = read_image("1b")
+                diff_between_both = read_image("1diff")
+
+                ref_path = joinpath(test_dir, "matching_ref.png")
+                cp(joinpath(@__DIR__, "fixtures", "1a.png"), ref_path)
+                
+                @test_pixelmatch joinpath(foldername, "matching") test_image
+                rec_path = joinpath(test_dir, "matching_rec.png")
+                @test isfile(rec_path)
+                diff_path = joinpath(test_dir, "matching_diff.png")
+                @test !isfile(diff_path)
+
+                # check if an object that can be shown as image/png also works
+                @test_pixelmatch joinpath(foldername, "matching") PNG(joinpath(test_dir, "matching_ref.png"))
+
+                # copy same image as before to a different name to get different rec/diff images
+                ref_path2 = joinpath(test_dir, "different_ref.png")
+                cp(joinpath(@__DIR__, "fixtures", "1a.png"), ref_path2)
+                
+                rec_path2 = joinpath(test_dir, "different_rec.png")
+                diff_path2 = joinpath(test_dir, "different_diff.png")
+                @test_pixelmatch_fails joinpath(foldername, "different") different_image 143 threshold=0.05
+
+                @test_reference joinpath(@__DIR__, "html_diff_viewer") PixelMatch.html_diff_viewer(; name = "Different", num_pixels_diff = 143, ref_path = ref_path2, rec_path = rec_path2, diff_path = diff_path2, shorten_embeds = true)
+                # whether the viewer works can only be checked manually
+                if isinteractive() && Base.displayable(MIME("juliavscode/html"))
+                    display(MIME("juliavscode/html"), PixelMatch.html_diff_viewer(; name = "Different", num_pixels_diff = 143, ref_path = ref_path2, rec_path = rec_path2, diff_path = diff_path2))
+                end
+                
+                @test isfile(rec_path2)
+                @test isfile(diff_path2)
+                
+                cp(diff_path2, joinpath(test_dir, "diff_ref.png"))
+                @test_pixelmatch joinpath(foldername, "diff") diff_between_both
+            finally
+                rm(test_dir; recursive=true, force=true)
+            end
+        end
     end
 end
