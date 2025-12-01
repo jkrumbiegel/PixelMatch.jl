@@ -90,6 +90,12 @@ function diff_test(img_path1::String, img_path2::String, diff_path::String, opti
     @test output_rgba == expected_rgba
 end
 
+struct PNG
+    path::String
+end
+
+Base.show(io::IO, ::MIME"image/png", p::PNG) = write(io, read(p.path))
+
 @testset "PixelMatch.jl Tests" begin
     
     # Test all the exact same cases as in the JavaScript tests
@@ -146,6 +152,9 @@ end
                 @test isfile(rec_path)
                 diff_path = joinpath(test_dir, "matching_diff.png")
                 @test !isfile(diff_path)
+
+                # check if an object that can be shown as image/png also works
+                @test_pixelmatch joinpath(foldername, "matching") PNG(joinpath(test_dir, "matching_ref.png"))
 
                 # copy same image as before to a different name to get different rec/diff images
                 ref_path2 = joinpath(test_dir, "different_ref.png")

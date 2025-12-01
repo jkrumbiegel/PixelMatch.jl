@@ -54,7 +54,6 @@ function _test_pixelmatch(path_stem::String, obj_to_record; test_pixel_mismatch:
     end
     recorded = PNGFiles.load(rec_path)
 
-
     # for running the tests locally where isinteractive() returns true
     interactive = INTERACTIVE_MODE[] && isinteractive()
 
