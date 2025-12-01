@@ -4,6 +4,7 @@ using PixelMatch: @test_pixelmatch_fails
 using ColorTypes
 using FileIO
 using PNGFiles
+using ReferenceTests
 
 PixelMatch.INTERACTIVE_MODE[] = false
 
@@ -150,6 +151,12 @@ end
             rec_path2 = joinpath(test_dir, "different_rec.png")
             diff_path2 = joinpath(test_dir, "different_diff.png")
             @test_pixelmatch_fails joinpath(foldername, "different") different_image 143 threshold=0.05
+
+            @test_reference joinpath(@__DIR__, "html_diff_viewer") PixelMatch.html_diff_viewer(; name = "Different", num_pixels_diff = 143, ref_path = ref_path2, rec_path = rec_path2, diff_path = diff_path2, shorten_embeds = true)
+            # whether the viewer works can only be checked manually
+            if isinteractive() && Base.displayable(MIME("juliavscode/html"))
+                display(MIME("juliavscode/html"), PixelMatch.html_diff_viewer(; name = "Different", num_pixels_diff = 143, ref_path = ref_path2, rec_path = rec_path2, diff_path = diff_path2))
+            end
             
             @test isfile(rec_path2)
             @test isfile(diff_path2)

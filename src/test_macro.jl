@@ -98,7 +98,7 @@ function _test_pixelmatch(path_stem::String, recorded::AbstractMatrix{<:ColorTyp
                         elseif interactive
                             # Display HTML diff viewer if available
                             if Base.displayable(MIME("juliavscode/html"))
-                                _show_html_diff(; name, num_pixels_diff, ref_path, rec_path, diff_path)
+                                display(MIME("juliavscode/html"), html_diff_viewer(; name, num_pixels_diff, ref_path, rec_path, diff_path))
                             end
                             print("Replace reference with recorded result? (y/n): ")
                             response = readline()
@@ -120,11 +120,17 @@ function _test_pixelmatch(path_stem::String, recorded::AbstractMatrix{<:ColorTyp
     end
 end
 
-function _show_html_diff(; name, num_pixels_diff, ref_path, rec_path, diff_path)
+function html_diff_viewer(; name, num_pixels_diff, ref_path, rec_path, diff_path, shorten_embeds = false)
     # Convert images to base64 for HTML display
     ref_b64 = Base64.base64encode(read(ref_path))
     rec_b64 = Base64.base64encode(read(rec_path))
     diff_b64 = Base64.base64encode(read(diff_path))
+
+    if shorten_embeds
+        ref_b64 = first(ref_b64, 100)
+        rec_b64 = first(rec_b64, 100)
+        diff_b64 = first(diff_b64, 100)
+    end
 
     html_content = """
     <div style="font-family: Arial, sans-serif; padding: 20px;">
@@ -137,9 +143,9 @@ function _show_html_diff(; name, num_pixels_diff, ref_path, rec_path, diff_path)
         </div>
         
         <div style="border: 2px solid #ddd; border-radius: 8px; padding: 10px; background: #f8f9fa; max-width: 100%; overflow: auto;">
-            <img id="img-recorded" src="data:image/png;base64,\$rec_b64" style="max-width: 100%; height: auto; display: none;" />
-            <img id="img-reference" src="data:image/png;base64,\$ref_b64" style="max-width: 100%; height: auto; display: none;" />
-            <img id="img-diff" src="data:image/png;base64,\$diff_b64" style="max-width: 100%; height: auto; display: block;" />
+            <img id="img-recorded" src="data:image/png;base64,$rec_b64" style="max-width: 100%; height: auto; display: none;" />
+            <img id="img-reference" src="data:image/png;base64,$ref_b64" style="max-width: 100%; height: auto; display: none;" />
+            <img id="img-diff" src="data:image/png;base64,$diff_b64" style="max-width: 100%; height: auto; display: block;" />
         </div>
         
         <script>
@@ -206,5 +212,5 @@ function _show_html_diff(; name, num_pixels_diff, ref_path, rec_path, diff_path)
     </div>
     """
 
-    return display(MIME("juliavscode/html"), html_content)
+    return html_content
 end
