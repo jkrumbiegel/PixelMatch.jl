@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 1.2.0 - 2026-05-12
+
 - Performance refactor of `pixelmatch`, ~2–3× faster with ~16× less allocation on the bundled test images. Also exposed a `checkerboard` keyword matching upstream pixelmatch 7.2. [#5](https://github.com/jkrumbiegel/PixelMatch.jl/pull/5)
 
 ## 1.1.1 - 2026-05-12
