@@ -56,16 +56,36 @@ function pixelmatch(img1::AbstractMatrix{<:Colorant}, img2::AbstractMatrix{<:Col
 
     max_delta = 35215.0 * threshold * threshold
     alpha_f = Float64(alpha)
-    diff = 0
 
-    @inbounds for x in 1:width, y in 1:height
+    nthr = Threads.nthreads()
+    nchunks = min(nthr, width)
+    chunk_size = cld(width, nchunks)
+    chunks = collect(Iterators.partition(1:width, chunk_size))
+    diff_counts = zeros(Int, length(chunks))
+
+    @sync for ci in eachindex(chunks)
+        x_chunk = chunks[ci]
+        Threads.@spawn diff_counts[ci] = _pixelmatch_chunk!(
+            OutColor, output, img1, img2, x_chunk, height, width,
+            aa_col, diff_col, alt_col, alpha_f, max_delta,
+            include_aa, diff_mask, checkerboard)
+    end
+
+    return sum(diff_counts), output
+end
+
+function _pixelmatch_chunk!(::Type{C}, output, img1, img2, x_chunk, height, width,
+                            aa_col, diff_col, alt_col, alpha_f, max_delta,
+                            include_aa::Bool, diff_mask::Bool, checkerboard::Bool) where {C}
+    local_diff = 0
+    @inbounds for x in x_chunk, y in 1:height
         p1 = img1[y, x]
         p2 = img2[y, x]
         r1, g1, b1, a1 = rgba_bytes(p1)
 
         if p1 == p2
             if !diff_mask
-                output[y, x] = gray_pixel(OutColor, r1, g1, b1, a1, alpha_f)
+                output[y, x] = gray_pixel(C, r1, g1, b1, a1, alpha_f)
             end
             continue
         end
@@ -85,14 +105,13 @@ function pixelmatch(img1::AbstractMatrix{<:Colorant}, img2::AbstractMatrix{<:Col
                 end
             else
                 output[y, x] = delta < 0 ? alt_col : diff_col
-                diff += 1
+                local_diff += 1
             end
         elseif !diff_mask
-            output[y, x] = gray_pixel(OutColor, r1, g1, b1, a1, alpha_f)
+            output[y, x] = gray_pixel(C, r1, g1, b1, a1, alpha_f)
         end
     end
-
-    return diff, output
+    return local_diff
 end
 
 @inline function rgba_bytes(c::Colorant)
