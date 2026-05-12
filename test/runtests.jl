@@ -5,6 +5,7 @@ using ColorTypes
 using FileIO
 using PNGFiles
 using ReferenceTests
+using MetaTesting: fails
 
 PixelMatch.INTERACTIVE_MODE[] = false
 
@@ -175,6 +176,14 @@ Base.show(io::IO, ::MIME"image/png", p::PNG) = write(io, read(p.path))
                 
                 cp(diff_path2, joinpath(test_dir, "diff_ref.png"))
                 @test_pixelmatch joinpath(foldername, "diff") diff_between_both
+
+                # Regression test: a size mismatch between reference and recorded
+                # must cause the macro's nested @test to fail.
+                cp(joinpath(@__DIR__, "fixtures", "1a.png"), joinpath(test_dir, "size_mismatch_ref.png"))
+                size_mismatch_image = fill(RGBA(0.5, 0.5, 0.5, 1.0), 5, 5)
+                @test fails() do
+                    @test_pixelmatch joinpath(foldername, "size_mismatch") size_mismatch_image
+                end
             finally
                 rm(test_dir; recursive=true, force=true)
             end
