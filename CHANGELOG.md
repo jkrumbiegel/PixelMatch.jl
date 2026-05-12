@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 1.3.0 - 2026-05-12
+
+- `pixelmatch` is now threaded, roughly 5–7× faster on medium and large images with 10 threads available. [#6](https://github.com/jkrumbiegel/PixelMatch.jl/pull/6)
+
 ## 1.2.0 - 2026-05-12
 
 - Performance refactor of `pixelmatch`, ~2–3× faster with ~16× less allocation on the bundled test images. Also exposed a `checkerboard` keyword matching upstream pixelmatch 7.2. [#5](https://github.com/jkrumbiegel/PixelMatch.jl/pull/5)
