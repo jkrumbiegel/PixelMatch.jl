@@ -2,7 +2,9 @@
 
 ## Unreleased
 
-- Fixed a bug in `@test_pixelmatch` where a size mismatch between reference and recorded images would silently pass instead of failing the test.
+## 1.1.1 - 2026-05-12
+
+- Fixed a bug in `@test_pixelmatch` where a size mismatch between reference and recorded images would silently pass instead of failing the test. [#4](https://github.com/jkrumbiegel/PixelMatch.jl/pull/4)
 
 ## 1.1.0 - 2025-12-01
 
