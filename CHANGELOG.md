@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 1.4.0 - 2026-05-13
+
+- `@test_pixelmatch` accepts `skip=cond` and `broken=cond`, matching `Test.@test`. [#7](https://github.com/jkrumbiegel/PixelMatch.jl/pull/7)
+
 ## 1.3.0 - 2026-05-12
 
 - `pixelmatch` is now threaded, roughly 5–7× faster on medium and large images with 10 threads available. [#6](https://github.com/jkrumbiegel/PixelMatch.jl/pull/6)

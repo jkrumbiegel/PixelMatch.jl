@@ -9,21 +9,32 @@ Files created:
 - `name_rec.png` - recorded/actual image (when test runs)
 - `name_diff.png` - diff image (when images differ)
 
-If the reference doesn't exist, it will be created. If images differ, an 
-interactive HTML diff viewer is shown (when available in VSCode) and the 
+If the reference doesn't exist, it will be created. If images differ, an
+interactive HTML diff viewer is shown (when available in VSCode) and the
 user is prompted to update the reference.
 
 Use `JULIA_REFERENCETESTS_UPDATE=true` to force-update all references without prompting.
 
+Supports the same `skip=cond` and `broken=cond` keyword arguments as `Test.@test`:
+- `skip=true` does not evaluate `image` and records a skipped test.
+- `broken=true` expects the image to differ from the reference; if it actually
+  matches, the test is recorded as an unexpected pass (`Error`).
+
 # Example
 ```julia
 @test_pixelmatch "references/my_plot" render(fig)
+@test_pixelmatch "references/wip"     render(fig) broken=true
+@test_pixelmatch "references/slow"    render(fig) skip=Sys.iswindows()
 ```
 """
 macro test_pixelmatch(name, expr, kwargs...)
     dir = Base.source_dir()
+    skip_ex, broken_ex, other_kws = _extract_skip_broken(kwargs)
     quote
-        _test_pixelmatch(abspath(joinpath($dir, $(esc(name)))), $(esc(expr)); $(esc.(kwargs)...))
+        _test_pixelmatch_dispatch(abspath(joinpath($dir, $(esc(name)))), $(esc(:(() -> $expr)));
+            skip = $(esc(skip_ex)),
+            broken = $(esc(broken_ex)),
+            $(map(esc, other_kws)...))
     end
 end
 
@@ -35,7 +46,37 @@ macro test_pixelmatch_fails(name, expr, numpixels, kwargs...)
     end
 end
 
-function _test_pixelmatch(path_stem::String, obj_to_record; test_pixel_mismatch::Union{Integer,Nothing} = nothing, kwargs...)
+function _extract_skip_broken(kwargs)
+    skip_ex = false
+    broken_ex = false
+    other = Any[]
+    for kw in kwargs
+        if kw isa Expr && kw.head === :(=) && kw.args[1] === :skip
+            skip_ex = kw.args[2]
+        elseif kw isa Expr && kw.head === :(=) && kw.args[1] === :broken
+            broken_ex = kw.args[2]
+        else
+            push!(other, kw)
+        end
+    end
+    return skip_ex, broken_ex, other
+end
+
+function _test_pixelmatch_dispatch(path_stem::String, render; skip::Bool = false, broken::Bool = false, kwargs...)
+    if skip && broken
+        error("invalid @test_pixelmatch call: cannot set both skip and broken keywords")
+    end
+    name = basename(path_stem)
+    if skip
+        Test.@testset "$name" begin
+            Test.@test true skip=true
+        end
+        return
+    end
+    _test_pixelmatch(path_stem, render(); broken, kwargs...)
+end
+
+function _test_pixelmatch(path_stem::String, obj_to_record; test_pixel_mismatch::Union{Integer,Nothing} = nothing, broken::Bool = false, kwargs...)
     update = tryparse(Bool, get(ENV, "JULIA_REFERENCETESTS_UPDATE", "false")) === true
     
     ref_path = path_stem * "_ref.png"
@@ -76,7 +117,7 @@ function _test_pixelmatch(path_stem::String, obj_to_record; test_pixel_mismatch:
                     @info "Reference size $(size(img_ref)) does not match recorded size $(size(recorded)) and JULIA_REFERENCETESTS_UPDATE=true, updating reference image"
                     PNGFiles.save(ref_path, recorded)
                 else
-                    Test.@test size(img_ref) == size(recorded)
+                    Test.@test size(img_ref) == size(recorded) broken=broken
                 end
             else
                 # Compare images using PixelMatch
@@ -84,24 +125,26 @@ function _test_pixelmatch(path_stem::String, obj_to_record; test_pixel_mismatch:
 
                 if test_pixel_mismatch !== nothing
                     test_pixel_mismatch <= 0 && error("The number of expected mismatching pixels must be larger than zero, was $test_pixel_mismatch")
-                    Test.@test test_pixel_mismatch == num_pixels_diff
+                    Test.@test test_pixel_mismatch == num_pixels_diff broken=broken
                     PNGFiles.save(diff_path, diff_image)
                 else
                     if num_pixels_diff > 0
                         # Save diff image
                         PNGFiles.save(diff_path, diff_image)
 
-                        # Print paths for inspection
-                        println("Reference test failed: $name")
-                        println("  Reference: $ref_path")
-                        println("  Recorded:    $rec_path")
-                        println("  Diff:      $diff_path")
-                        println("  Pixels different: $num_pixels_diff")
+                        if !broken
+                            # Print paths for inspection
+                            println("Reference test failed: $name")
+                            println("  Reference: $ref_path")
+                            println("  Recorded:    $rec_path")
+                            println("  Diff:      $diff_path")
+                            println("  Pixels different: $num_pixels_diff")
+                        end
 
                         if update
                             @info "JULIA_REFERENCETESTS_UPDATE=true, updating reference image"
                             cp(rec_path, ref_path; force = true)
-                        elseif interactive
+                        elseif interactive && !broken
                             # Display HTML diff viewer if available
                             if Base.displayable(MIME("juliavscode/html"))
                                 display(MIME("juliavscode/html"), html_diff_viewer(; name, num_pixels_diff, ref_path, rec_path, diff_path))
@@ -115,10 +158,10 @@ function _test_pixelmatch(path_stem::String, obj_to_record; test_pixel_mismatch:
                                 Test.@test num_pixels_diff == 0
                             end
                         else
-                            Test.@test num_pixels_diff == 0
+                            Test.@test num_pixels_diff == 0 broken=broken
                         end
                     else
-                        Test.@test num_pixels_diff == 0
+                        Test.@test num_pixels_diff == 0 broken=broken
                     end
                 end
             end
