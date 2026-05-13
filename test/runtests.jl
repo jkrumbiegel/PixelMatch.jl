@@ -9,6 +9,21 @@ using MetaTesting: fails, nonpassing_results
 
 PixelMatch.INTERACTIVE_MODE[] = false
 
+# This can be removed for `@test_throws` once CI only uses Julia 1.8 and up
+macro test_throws_message(message::String, exp)
+    return quote
+        threw_exception = false
+        try
+            $(esc(exp))
+        catch e
+            msg = sprint(Base.showerror, e)
+            threw_exception = true
+            @test occursin($message, msg)
+        end
+        @test threw_exception
+    end
+end
+
 # Helper function to read PNG images
 function read_image(name::String)
     filepath = joinpath(@__DIR__, "fixtures", "$name.png")
@@ -236,7 +251,7 @@ Base.show(io::IO, ::MIME"image/png", p::PNG) = write(io, read(p.path))
                 end
 
                 @testset "skip and broken together is an error" begin
-                    @test_throws "cannot set both skip and broken" begin
+                    @test_throws_message "cannot set both skip and broken" begin
                         @test_pixelmatch joinpath(foldername, "skip_and_broken") test_image skip=true broken=true
                     end
                 end
