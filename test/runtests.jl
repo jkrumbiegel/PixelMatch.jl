@@ -5,7 +5,7 @@ using ColorTypes
 using FileIO
 using PNGFiles
 using ReferenceTests
-using MetaTesting: fails
+using MetaTesting: fails, nonpassing_results
 
 PixelMatch.INTERACTIVE_MODE[] = false
 
@@ -183,6 +183,62 @@ Base.show(io::IO, ::MIME"image/png", p::PNG) = write(io, read(p.path))
                 size_mismatch_image = fill(RGBA(0.5, 0.5, 0.5, 1.0), 5, 5)
                 @test fails() do
                     @test_pixelmatch joinpath(foldername, "size_mismatch") size_mismatch_image
+                end
+
+                @testset "skip keyword" begin
+                    # skip=true must not evaluate the image expression, must not write
+                    # files, must not fail even when no reference exists, and must
+                    # record a single Broken(:skipped) result.
+                    rendered = Ref(false)
+                    render_with_flag() = (rendered[] = true; test_image)
+                    results = nonpassing_results() do
+                        @test_pixelmatch joinpath(foldername, "skipped") render_with_flag() skip=true
+                    end
+                    @test rendered[] == false
+                    @test !isfile(joinpath(test_dir, "skipped_rec.png"))
+                    @test !isfile(joinpath(test_dir, "skipped_ref.png"))
+                    broken_results = filter(r -> r isa Test.Broken, results)
+                    @test length(broken_results) == 1
+                    @test broken_results[1].test_type == :skipped
+
+                    # skip=false must behave as if the keyword was absent.
+                    cp(joinpath(@__DIR__, "fixtures", "1a.png"), joinpath(test_dir, "not_skipped_ref.png"))
+                    @test_pixelmatch joinpath(foldername, "not_skipped") test_image skip=false
+                    @test isfile(joinpath(test_dir, "not_skipped_rec.png"))
+                end
+
+                @testset "broken keyword" begin
+                    # broken=true on a mismatching image must record Broken(:test)
+                    # and must not fail the surrounding testset.
+                    cp(joinpath(@__DIR__, "fixtures", "1a.png"), joinpath(test_dir, "broken_mismatch_ref.png"))
+                    results = nonpassing_results() do
+                        @test_pixelmatch joinpath(foldername, "broken_mismatch") different_image broken=true threshold=0.05
+                    end
+                    @test count(r -> r isa Test.Fail, results) == 0
+                    @test count(r -> r isa Test.Error, results) == 0
+                    broken_results = filter(r -> r isa Test.Broken, results)
+                    @test length(broken_results) == 1
+                    @test broken_results[1].test_type == :test
+
+                    # broken=true on a matching image is an unexpected pass and must
+                    # be recorded as Test.Error(:test_unbroken).
+                    cp(joinpath(@__DIR__, "fixtures", "1a.png"), joinpath(test_dir, "broken_match_ref.png"))
+                    results = nonpassing_results() do
+                        @test_pixelmatch joinpath(foldername, "broken_match") test_image broken=true
+                    end
+                    error_results = filter(r -> r isa Test.Error, results)
+                    @test length(error_results) == 1
+                    @test error_results[1].test_type == :test_unbroken
+
+                    # broken=false must behave as if the keyword was absent.
+                    cp(joinpath(@__DIR__, "fixtures", "1a.png"), joinpath(test_dir, "broken_false_ref.png"))
+                    @test_pixelmatch joinpath(foldername, "broken_false") test_image broken=false
+                end
+
+                @testset "skip and broken together is an error" begin
+                    @test_throws "cannot set both skip and broken" begin
+                        @test_pixelmatch joinpath(foldername, "skip_and_broken") test_image skip=true broken=true
+                    end
                 end
             finally
                 rm(test_dir; recursive=true, force=true)
