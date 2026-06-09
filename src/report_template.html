@@ -20,8 +20,8 @@ header p { margin: 0; color: #8b949e; }
 .controls { display: flex; gap: 6px; padding: 8px 12px; }
 .controls button { flex: 1; padding: 6px 10px; border: 1px solid #30363d; border-radius: 6px; background: #21262d; color: #e6edf3; cursor: pointer; font-size: 13px; }
 .controls button.active { background: #1f6feb; border-color: #1f6feb; color: #fff; }
-.stage { background: #010409; padding: 8px; display: flex; justify-content: center; cursor: pointer; }
-.stage img { max-width: 100%; height: auto; }
+.stage { background: #010409; padding: 8px; display: flex; justify-content: safe center; overflow: auto; max-height: 80vh; cursor: pointer; }
+.stage img { display: block; }
 </style>
 </head>
 <body>
