@@ -39,3 +39,12 @@ jobs:
       - uses: julia-actions/cache@d10a6fd8f31b12404a54613ebad242900567f2b9 # v2.1.0
       - uses: julia-actions/julia-buildpkg@e3eb439fad4f9aba7da2667e7510e4a46ebc46e1 # v1.7.0
       - uses: julia-actions/julia-runtest@678da69444cd5f13d7e674a90cb4f534639a14f9 # v1.11.2
+      # The test suite generates an example report from deliberate failures via
+      # @pixelmatch_report; upload it so the artifact workflow can be inspected here.
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always() && matrix.os == 'ubuntu-latest' && matrix.version == '1'
+        with:
+          name: pixelmatch-report
+          path: test/pixelmatch-report.html
+          archive: false
+          if-no-files-found: error

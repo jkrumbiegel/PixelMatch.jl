@@ -261,3 +261,5 @@ Base.show(io::IO, ::MIME"image/png", p::PNG) = write(io, read(p.path))
         end
     end
 end
+
+include("report_tests.jl")
