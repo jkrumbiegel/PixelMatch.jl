@@ -54,7 +54,7 @@ end
 
 Unlike globbing for `*_diff.png`, this captures every failure mode, including size mismatches and missing references, which produce no diff image. The report is only written when there is at least one failure.
 
-The report is a single HTML file with all CSS, JavaScript and images inlined, so it works as an unzipped GitHub Actions artifact (`actions/upload-artifact@v7` or later with `archive: false`) that the browser can open directly:
+The report is a single HTML file with all CSS, JavaScript and images inlined, so it works as an unzipped GitHub Actions artifact (`actions/upload-artifact@v7` or later with `archive: false`) that the browser can open directly. `if-no-files-found: ignore` keeps the step quiet when tests fail for a reason unrelated to reference images, in which case no report is written:
 
 ```yaml
       - uses: julia-actions/julia-runtest@v1
@@ -64,4 +64,5 @@ The report is a single HTML file with all CSS, JavaScript and images inlined, so
           name: pixelmatch-report
           path: test/pixelmatch-report.html
           archive: false
+          if-no-files-found: ignore
 ```
