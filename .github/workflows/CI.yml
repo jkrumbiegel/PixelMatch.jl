@@ -47,4 +47,4 @@ jobs:
           name: pixelmatch-report
           path: test/pixelmatch-report.html
           archive: false
-          if-no-files-found: ignore
+          if-no-files-found: error
