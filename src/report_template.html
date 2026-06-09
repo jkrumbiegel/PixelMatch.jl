@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PixelMatch reference test failures</title>
+<style>
+* { box-sizing: border-box; }
+body { font-family: -apple-system, system-ui, Segoe UI, Arial, sans-serif; margin: 0; background: #0d1117; color: #e6edf3; }
+header { padding: 16px 24px; border-bottom: 1px solid #30363d; }
+header h1 { margin: 0 0 4px; font-size: 18px; }
+header p { margin: 0; color: #8b949e; }
+.gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 16px; padding: 24px; }
+.card { border: 1px solid #30363d; border-radius: 8px; background: #161b22; overflow: hidden; display: flex; flex-direction: column; }
+.card-head { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border-bottom: 1px solid #30363d; }
+.name { font-weight: 600; overflow-wrap: anywhere; }
+.status { color: #8b949e; font-size: 12px; overflow-wrap: anywhere; }
+.status-mismatch { color: #f85149; }
+.status-size_mismatch, .status-missing_ref { color: #d29922; }
+.controls { display: flex; gap: 6px; padding: 8px 12px; }
+.controls button { flex: 1; padding: 6px 10px; border: 1px solid #30363d; border-radius: 6px; background: #21262d; color: #e6edf3; cursor: pointer; font-size: 13px; }
+.controls button.active { background: #1f6feb; border-color: #1f6feb; color: #fff; }
+.stage { background: #010409; padding: 8px; display: flex; justify-content: center; cursor: pointer; }
+.stage img { max-width: 100%; height: auto; }
+</style>
+</head>
+<body>
+<header>
+<h1>PixelMatch reference test failures</h1>
+<p>{{SUMMARY}}</p>
+</header>
+<main class="gallery">
+{{CARDS}}</main>
+<script>
+document.querySelectorAll('.card').forEach(function (card) {
+  var toggle = card.querySelector('button[data-role="toggle"]');
+  var diffBtn = card.querySelector('button[data-role="diff"]');
+  var imgs = {
+    ref: card.querySelector('img[data-view="ref"]'),
+    rec: card.querySelector('img[data-view="rec"]'),
+    diff: card.querySelector('img[data-view="diff"]'),
+  };
+  var pair = imgs.rec ? 'rec' : 'ref';
+  var showingDiff = !!imgs.diff;
+
+  function render() {
+    var view = showingDiff ? 'diff' : pair;
+    Object.keys(imgs).forEach(function (k) { if (imgs[k]) imgs[k].style.display = k === view ? 'block' : 'none'; });
+    if (toggle) {
+      toggle.textContent = pair === 'rec' ? 'Showing Recorded' : 'Showing Reference';
+      toggle.classList.toggle('active', !showingDiff);
+    }
+    if (diffBtn) diffBtn.classList.toggle('active', showingDiff);
+  }
+
+  function flip() {
+    if (showingDiff) { showingDiff = false; }
+    else if (imgs.ref && imgs.rec) { pair = pair === 'rec' ? 'ref' : 'rec'; }
+    render();
+  }
+
+  if (toggle) toggle.addEventListener('click', flip);
+  if (diffBtn) diffBtn.addEventListener('click', function () { showingDiff = true; render(); });
+  var stage = card.querySelector('.stage');
+  if (stage) stage.addEventListener('click', flip);
+  render();
+});
+</script>
+</body>
+</html>

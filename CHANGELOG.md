@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Added `@pixelmatch_report`, which wraps a block of `@test_pixelmatch` calls and writes a self-contained HTML report of all failing comparisons for CI artifact upload. [#8](https://github.com/jkrumbiegel/PixelMatch.jl/pull/8)
+
 ## 1.4.0 - 2026-05-13
 
 - `@test_pixelmatch` accepts `skip=cond` and `broken=cond`, matching `Test.@test`. [#7](https://github.com/jkrumbiegel/PixelMatch.jl/pull/7)

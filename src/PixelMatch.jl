@@ -9,6 +9,7 @@ INTERACTIVE_MODE = Ref(true)
 
 export @test_pixelmatch
 export pixelmatch
+export @pixelmatch_report
 
 """
     pixelmatch(img1, img2; threshold=0.1, include_aa=false,
@@ -257,5 +258,6 @@ diff output is bit-identical to the reference implementation.
 end
 
 include("test_macro.jl")
+include("report.jl")
 
 end # module PixelMatch

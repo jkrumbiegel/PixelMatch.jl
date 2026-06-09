@@ -107,6 +107,7 @@ function _test_pixelmatch(path_stem::String, obj_to_record; test_pixel_mismatch:
                 cp(rec_path, ref_path; force = true)
             else
                 Test.@test reference_exists
+                _record_failure(; name, status = :missing_ref, rec_path, rec_size = size(recorded))
             end
         else
             # Load reference image
@@ -118,6 +119,8 @@ function _test_pixelmatch(path_stem::String, obj_to_record; test_pixel_mismatch:
                     PNGFiles.save(ref_path, recorded)
                 else
                     Test.@test size(img_ref) == size(recorded) broken=broken
+                    broken || _record_failure(; name, status = :size_mismatch, ref_path, rec_path,
+                        ref_size = size(img_ref), rec_size = size(recorded))
                 end
             else
                 # Compare images using PixelMatch
@@ -159,6 +162,9 @@ function _test_pixelmatch(path_stem::String, obj_to_record; test_pixel_mismatch:
                             end
                         else
                             Test.@test num_pixels_diff == 0 broken=broken
+                            broken || _record_failure(; name, status = :mismatch, num_pixels_diff,
+                                ref_path, rec_path, diff_path,
+                                ref_size = size(img_ref), rec_size = size(recorded))
                         end
                     else
                         Test.@test num_pixels_diff == 0 broken=broken
