@@ -3,6 +3,7 @@
 ## Unreleased
 
 - Added `@pixelmatch_report`, which wraps a block of `@test_pixelmatch` calls and writes a self-contained HTML report of all failing comparisons for CI artifact upload. [#8](https://github.com/jkrumbiegel/PixelMatch.jl/pull/8)
+- The `@pixelmatch_report` gallery now lays out one comparison per row to stop images from jumping between rows on toggle. [#9](https://github.com/jkrumbiegel/PixelMatch.jl/pull/9)
 
 ## 1.4.0 - 2026-05-13
 
