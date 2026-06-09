@@ -120,16 +120,20 @@ end
     @testset "pixelmatch_report end-to-end" begin
         dir = mktempdir()
 
-        out = joinpath(dir, "report.html")
-        stem = joinpath(dir, "case")
-        cp(joinpath(_FIX, "1a.png"), stem * "_ref.png")
-        @pixelmatch_report enabled = true out_file = out begin
-            @test fails() do
-                @test_pixelmatch stem _img("1b") threshold = 0.05
+        report = joinpath(@__DIR__, "pixelmatch-report.html")
+        cp(joinpath(_FIX, "1a.png"), joinpath(dir, "scatter_ref.png"))
+        cp(joinpath(_FIX, "1a.png"), joinpath(dir, "resized_ref.png"))
+        @test fails() do
+            @pixelmatch_report enabled = true out_file = report begin
+                @test_pixelmatch joinpath(dir, "scatter") _img("1b") threshold = 0.05
+                @test_pixelmatch joinpath(dir, "resized") fill(RGBA(0.6, 0.6, 0.7, 1.0), 120, 200)
+                @test_pixelmatch joinpath(dir, "brand_new") _img("3a")
             end
         end
-        @test isfile(out)
-        @test occursin("data:image/png;base64,", read(out, String))
+        @test isfile(report)
+        html = read(report, String)
+        @test occursin("data:image/png;base64,", html)
+        @test _count(r"<section class=\"card\"", html) == 3
 
         out_pass = joinpath(dir, "report_pass.html")
         pass_stem = joinpath(dir, "passing")
@@ -142,8 +146,8 @@ end
         out_disabled = joinpath(dir, "report_disabled.html")
         dis_stem = joinpath(dir, "disabled")
         cp(joinpath(_FIX, "1a.png"), dis_stem * "_ref.png")
-        @pixelmatch_report enabled = false out_file = out_disabled begin
-            @test fails() do
+        @test fails() do
+            @pixelmatch_report enabled = false out_file = out_disabled begin
                 @test_pixelmatch dis_stem _img("1b") threshold = 0.05
             end
         end
