@@ -172,6 +172,18 @@ Base.show(io::IO, ::MIME"image/png", p::PNG) = write(io, read(p.path))
                 # check if an object that can be shown as image/png also works
                 @test_pixelmatch joinpath(foldername, "matching") PNG(joinpath(test_dir, "matching_ref.png"))
 
+                @testset "path as recorded image" begin
+                    cp(joinpath(@__DIR__, "fixtures", "1a.png"), joinpath(test_dir, "from_path_ref.png"))
+                    source_path = joinpath(test_dir, "from_path_source.png")
+                    cp(joinpath(@__DIR__, "fixtures", "1a.png"), source_path)
+                    @test_pixelmatch joinpath(foldername, "from_path") source_path
+                    @test read(joinpath(test_dir, "from_path_rec.png")) == read(source_path)
+
+                    @test_throws_message "not an existing file" begin
+                        @test_pixelmatch joinpath(foldername, "from_missing_path") joinpath(test_dir, "nonexistent.png")
+                    end
+                end
+
                 # copy same image as before to a different name to get different rec/diff images
                 ref_path2 = joinpath(test_dir, "different_ref.png")
                 cp(joinpath(@__DIR__, "fixtures", "1a.png"), ref_path2)

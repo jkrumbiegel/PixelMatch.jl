@@ -4,6 +4,10 @@
 Compare an image against a reference file using PixelMatch. The `name` should be
 the path stem without extension (`_suffix.png` is added automatically).
 
+The `image` can be an image matrix, an object `show`-able as `image/png`, or a
+path to an existing PNG file. A path is copied to the recorded file verbatim,
+which preserves metadata such as the `pHYs` DPI chunk.
+
 Files created:
 - `name_ref.png` - reference image
 - `name_rec.png` - recorded/actual image (when test runs)
@@ -88,6 +92,9 @@ function _test_pixelmatch(path_stem::String, obj_to_record; test_pixel_mismatch:
 
     if obj_to_record isa AbstractMatrix{<:Colorant}
         PNGFiles.save(rec_path, obj_to_record)
+    elseif obj_to_record isa AbstractString
+        isfile(obj_to_record) || error("the recorded image path is not an existing file: $obj_to_record")
+        cp(obj_to_record, rec_path; force = true)
     else
         open(rec_path, "w") do io
             show(io, MIME"image/png"(), obj_to_record)
