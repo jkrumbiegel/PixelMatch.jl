@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.6.0 - 2026-07-16
 
 - `@test_pixelmatch` accepts a path to an existing PNG file as the recorded image, copying it verbatim so metadata like the `pHYs` DPI chunk is preserved. [#10](https://github.com/jkrumbiegel/PixelMatch.jl/pull/10)
 
