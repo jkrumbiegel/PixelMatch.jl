@@ -1,9 +1,16 @@
 # Changelog
 
-## Unreleased
+## 1.6.0 - 2026-07-16
+
+- `@test_pixelmatch` accepts a path to an existing PNG file as the recorded image, copying it verbatim so metadata like the `pHYs` DPI chunk is preserved. [#10](https://github.com/jkrumbiegel/PixelMatch.jl/pull/10)
+
+## 1.5.1 - 2026-06-09
+
+- The `@pixelmatch_report` gallery now lays out one comparison per row to stop images from jumping between rows on toggle. [#9](https://github.com/jkrumbiegel/PixelMatch.jl/pull/9)
+
+## 1.5.0 - 2026-06-09
 
 - Added `@pixelmatch_report`, which wraps a block of `@test_pixelmatch` calls and writes a self-contained HTML report of all failing comparisons for CI artifact upload. [#8](https://github.com/jkrumbiegel/PixelMatch.jl/pull/8)
-- The `@pixelmatch_report` gallery now lays out one comparison per row to stop images from jumping between rows on toggle. [#9](https://github.com/jkrumbiegel/PixelMatch.jl/pull/9)
 
 ## 1.4.0 - 2026-05-13
 
