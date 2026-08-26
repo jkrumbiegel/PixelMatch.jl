@@ -212,6 +212,18 @@ Base.show(io::IO, ::MIME"image/png", p::PNG) = write(io, read(p.path))
                     @test_pixelmatch joinpath(foldername, "size_mismatch") size_mismatch_image
                 end
 
+                @testset "size mismatch update copies the recorded file verbatim" begin
+                    cp(joinpath(@__DIR__, "fixtures", "1a.png"), joinpath(test_dir, "size_update_ref.png"))
+                    source_path = joinpath(test_dir, "size_update_source.png")
+                    PNGFiles.save(source_path, fill(RGBA(0.5, 0.5, 0.5, 1.0), 5, 5); dpi = (96, 96))
+                    withenv("JULIA_REFERENCETESTS_UPDATE" => "true") do
+                        @test_pixelmatch joinpath(foldername, "size_update") source_path
+                    end
+                    updated_ref = read(joinpath(test_dir, "size_update_ref.png"))
+                    @test updated_ref == read(source_path)
+                    @test updated_ref == read(joinpath(test_dir, "size_update_rec.png"))
+                end
+
                 @testset "skip keyword" begin
                     # skip=true must not evaluate the image expression, must not write
                     # files, must not fail even when no reference exists, and must

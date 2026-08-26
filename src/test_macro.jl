@@ -123,7 +123,7 @@ function _test_pixelmatch(path_stem::String, obj_to_record; test_pixel_mismatch:
             if size(img_ref) != size(recorded)
                 if update
                     @info "Reference size $(size(img_ref)) does not match recorded size $(size(recorded)) and JULIA_REFERENCETESTS_UPDATE=true, updating reference image"
-                    PNGFiles.save(ref_path, recorded)
+                    cp(rec_path, ref_path; force = true)
                 else
                     Test.@test size(img_ref) == size(recorded) broken=broken
                     broken || _record_failure(; name, status = :size_mismatch, ref_path, rec_path,
